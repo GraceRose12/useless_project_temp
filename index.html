@@ -1,1 +1,829 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ChayaGPT — AI Tea Cooling Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1c130d;
+    --bg2: #241a12;
+    --panel: #2c2019;
+    --panel-line: #40301f;
+    --amber: #c17817;
+    --amber-light: #e6a940;
+    --tea: #a8641b;
+    --cream: #f2e2c8;
+    --muted: #b69a7c;
+    --cold: #7fa3bd;
+    --warn: #e0752f;
+    --danger: #d6453f;
+    --good: #7cae6b;
+    --glass-rim: #4a3826;
+    --radius-lg: 26px;
+    --radius-md: 16px;
+    --radius-sm: 10px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 20% -10%, #2e2014 0%, transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, #26190f 0%, transparent 55%),
+      var(--bg);
+    color:var(--cream);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:28px 18px 60px;
+  }
+
+  .wrap{max-width:980px;margin:0 auto;}
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:20px;
+    flex-wrap:wrap;
+    margin-bottom:30px;
+    padding-bottom:22px;
+    border-bottom:1px solid var(--panel-line);
+  }
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand-mark{
+    width:46px;height:46px;border-radius:12px;
+    background:linear-gradient(155deg, var(--amber-light), var(--tea));
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;
+    box-shadow: 0 4px 14px rgba(193,120,23,0.35);
+    flex-shrink:0;
+  }
+  h1{
+    font-family:'Baloo 2', sans-serif;
+    font-size:clamp(28px,4.5vw,38px);
+    font-weight:800;
+    margin:0;
+    line-height:1;
+    letter-spacing:-0.01em;
+  }
+  .tagline{
+    color:var(--muted);
+    font-size:14.5px;
+    margin-top:6px;
+    max-width:380px;
+  }
+  .badge{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    color:var(--muted);
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    padding:7px 12px;
+    border-radius:100px;
+    white-space:nowrap;
+  }
+
+  /* ---------- Layout ---------- */
+  .stage{
+    display:grid;
+    grid-template-columns: 320px 1fr;
+    gap:26px;
+    align-items:start;
+  }
+  @media (max-width:780px){
+    .stage{grid-template-columns:1fr;}
+  }
+
+  /* ---------- Cup panel ---------- */
+  .cup-panel{
+    background: linear-gradient(180deg, var(--panel), var(--bg2));
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-lg);
+    padding:26px 20px 22px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .cup-panel::before{
+    content:"";
+    position:absolute; inset:0;
+    background: radial-gradient(ellipse 260px 160px at 50% 0%, rgba(230,169,64,0.08), transparent 70%);
+    pointer-events:none;
+  }
+  .status-pill{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:0.02em;
+    padding:6px 13px;
+    border-radius:100px;
+    background:rgba(124,174,107,0.14);
+    color:var(--good);
+    border:1px solid rgba(124,174,107,0.3);
+    margin-bottom:18px;
+    transition:all .35s ease;
+  }
+  .status-pill.warn{background:rgba(224,117,47,0.16);color:var(--warn);border-color:rgba(224,117,47,0.35);}
+  .status-pill.danger{background:rgba(214,69,63,0.16);color:var(--danger);border-color:rgba(214,69,63,0.35);}
+  .status-pill.idle{background:rgba(182,154,124,0.14);color:var(--muted);border-color:rgba(182,154,124,0.3);}
+
+  .glass-scene{
+    width:180px;height:230px;
+    position:relative;
+    margin-bottom:14px;
+  }
+  .steam-wrap{
+    position:absolute;
+    bottom:150px; left:50%;
+    width:120px; height:90px;
+    transform:translateX(-50%);
+    opacity:0;
+    transition:opacity .6s ease;
+    pointer-events:none;
+  }
+  .steam-wrap path{
+    stroke:rgba(242,226,200,0.55);
+    stroke-width:5;
+    fill:none;
+    stroke-linecap:round;
+  }
+  .steam-wrap .s1{animation: rise 2.6s ease-in-out infinite;}
+  .steam-wrap .s2{animation: rise 2.6s ease-in-out infinite .5s;}
+  .steam-wrap .s3{animation: rise 2.6s ease-in-out infinite 1.1s;}
+  @keyframes rise{
+    0%{transform:translateY(10px);opacity:0;}
+    25%{opacity:.9;}
+    80%{opacity:0;}
+    100%{transform:translateY(-32px);opacity:0;}
+  }
+
+  .glass-svg{position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+    transition: transform .9s cubic-bezier(.4,0,.2,1);
+  }
+  .glass-svg.tilt{transform:translateX(-50%) rotate(-52deg) translate(-18px,10px);}
+
+  .temp-readout{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:800;
+    font-size:44px;
+    line-height:1;
+    margin-top:4px;
+    letter-spacing:-0.01em;
+    transition:color .4s ease;
+  }
+  .temp-sub{
+    font-size:12.5px;
+    color:var(--muted);
+    margin-top:4px;
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  .pour-btn{
+    margin-top:20px;
+    width:100%;
+    border:none;
+    border-radius:var(--radius-md);
+    padding:13px 18px;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:16px;
+    background:linear-gradient(160deg, var(--amber-light), var(--tea));
+    color:#241505;
+    cursor:pointer;
+    box-shadow:0 6px 18px rgba(193,120,23,0.3);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .pour-btn:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(193,120,23,0.4);}
+  .pour-btn:active{transform:translateY(0);}
+  .pour-btn:disabled{opacity:.45;cursor:default;transform:none;box-shadow:none;}
+
+  .drink-btn{
+    margin-top:10px;
+    width:100%;
+    border:none;
+    border-radius:var(--radius-md);
+    padding:13px 18px;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:15px;
+    background:transparent;
+    color:var(--danger);
+    border:1.5px solid var(--danger);
+    cursor:pointer;
+    display:none;
+    transition:background .2s ease, color .2s ease;
+  }
+  .drink-btn.show{display:block;animation:pulse 1.6s ease-in-out infinite;}
+  .drink-btn:hover{background:rgba(214,69,63,0.12);}
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(214,69,63,0.35);}
+    50%{box-shadow:0 0 0 8px rgba(214,69,63,0);}
+  }
+
+  /* ---------- Right column ---------- */
+  .right-col{display:flex;flex-direction:column;gap:20px;}
+
+  .panel{
+    background: linear-gradient(180deg, var(--panel), var(--bg2));
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-lg);
+    padding:22px 22px 20px;
+  }
+  .panel h2{
+    font-family:'Baloo 2', sans-serif;
+    font-size:17px;
+    font-weight:700;
+    margin:0 0 16px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .panel h2 .n{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    background:rgba(182,154,124,0.12);
+    padding:3px 8px;
+    border-radius:6px;
+  }
+
+  .field-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px 18px;
+  }
+  @media (max-width:520px){.field-grid{grid-template-columns:1fr;}}
+
+  .field label{
+    display:flex; justify-content:space-between;
+    font-size:13px; color:var(--muted); margin-bottom:8px;
+  }
+  .field label span.val{color:var(--cream);font-family:'JetBrains Mono',monospace;font-size:12.5px;}
+
+  input[type=range]{
+    -webkit-appearance:none;width:100%;height:5px;border-radius:4px;
+    background:var(--panel-line);outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:17px;height:17px;border-radius:50%;
+    background:var(--amber-light);cursor:pointer;border:2px solid #241505;
+  }
+
+  select{
+    width:100%;
+    background:var(--bg2);
+    color:var(--cream);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-sm);
+    padding:9px 11px;
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+  }
+
+  .toggle-row{
+    display:flex;align-items:center;justify-content:space-between;
+    grid-column:1/-1;
+    padding-top:2px;
+  }
+  .toggle-row label{font-size:13px;color:var(--muted);margin:0;}
+  .switch{
+    position:relative;width:42px;height:24px;flex-shrink:0;
+  }
+  .switch input{opacity:0;width:0;height:0;}
+  .slider-el{
+    position:absolute;cursor:pointer;inset:0;
+    background:var(--panel-line);border-radius:100px;transition:.25s;
+  }
+  .slider-el::before{
+    content:"";position:absolute;height:18px;width:18px;left:3px;top:3px;
+    background:var(--cream);border-radius:50%;transition:.25s;
+  }
+  .switch input:checked + .slider-el{background:var(--amber);}
+  .switch input:checked + .slider-el::before{transform:translateX(18px);}
+
+  /* ---------- Prediction panel ---------- */
+  .predict-panel{
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .predict-hero{
+    display:flex;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;gap:14px;
+    background:var(--bg2);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-md);
+    padding:16px 18px;
+  }
+  .predict-hero .label{font-size:12.5px;color:var(--muted);margin-bottom:5px;}
+  .predict-hero .value{
+    font-family:'Baloo 2', sans-serif;
+    font-size:30px;font-weight:800;
+    letter-spacing:-0.01em;
+  }
+  .confidence{
+    display:flex;flex-direction:column;align-items:flex-end;gap:6px;
+    min-width:140px;
+  }
+  .confidence .cbar{
+    width:140px;height:6px;border-radius:4px;background:var(--panel-line);overflow:hidden;
+  }
+  .confidence .cbar > div{
+    height:100%;background:linear-gradient(90deg, var(--amber), var(--good));
+    border-radius:4px;transition:width .5s ease;
+  }
+  .confidence .clabel{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+
+  .factors{
+    display:flex;flex-wrap:wrap;gap:8px;
+  }
+  .factor-chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    background:var(--bg2);
+    border:1px solid var(--panel-line);
+    padding:5px 10px;
+    border-radius:100px;
+  }
+
+  .log{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    max-height:110px;
+    overflow-y:auto;
+    display:flex;flex-direction:column-reverse;
+    gap:4px;
+    padding-right:4px;
+  }
+  .log div{opacity:0;animation:fadein .4s ease forwards;}
+  @keyframes fadein{to{opacity:1;}}
+  .log div.hot{color:var(--warn);}
+  .log div.cold{color:var(--danger);}
+
+  /* ---------- Warning modal ---------- */
+  .overlay{
+    position:fixed;inset:0;
+    background:rgba(10,6,3,0.72);
+    display:none;
+    align-items:center;justify-content:center;
+    padding:20px;
+    z-index:50;
+    backdrop-filter: blur(3px);
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:linear-gradient(180deg,#2c2019,#20160f);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-lg);
+    padding:30px 28px;
+    max-width:360px;
+    text-align:center;
+    animation:pop .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes pop{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .modal .emoji{font-size:42px;margin-bottom:6px;}
+  .modal h3{
+    font-family:'Baloo 2',sans-serif;font-size:21px;margin:0 0 8px;
+  }
+  .modal p{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 20px;}
+  .modal.danger h3{color:var(--danger);}
+  .modal.warn h3{color:var(--warn);}
+  .modal-actions{display:flex;gap:10px;}
+  .modal-actions button{
+    flex:1;
+    border-radius:var(--radius-sm);
+    padding:11px 14px;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;font-size:14px;
+    cursor:pointer;border:none;
+  }
+  .modal-actions .primary{background:linear-gradient(160deg,var(--amber-light),var(--tea));color:#241505;}
+  .modal-actions .ghost{background:transparent;border:1.5px solid var(--panel-line);color:var(--muted);}
+
+  footer{
+    text-align:center;
+    color:var(--muted);
+    font-size:12px;
+    margin-top:36px;
+    font-family:'JetBrains Mono',monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">☕</div>
+      <div>
+        <h1>ChayaGPT</h1>
+        <div class="tagline">Predicts exactly how many minutes you have before your chaya becomes emotionally unavailable.</div>
+      </div>
+    </div>
+    <div class="badge">Newton's Law of Cooling &nbsp;·&nbsp; v1.0-beta</div>
+  </header>
+
+  <div class="stage">
+
+    <!-- CUP -->
+    <div class="cup-panel">
+      <div class="status-pill idle" id="statusPill">Awaiting chaya</div>
+
+      <div class="glass-scene">
+        <div class="steam-wrap" id="steamWrap">
+          <svg viewBox="0 0 120 90" width="120" height="90">
+            <path class="s1" d="M30,90 C20,70 40,55 30,35 C22,18 38,10 34,0"/>
+            <path class="s2" d="M60,90 C50,68 68,52 58,32 C50,14 66,8 62,0"/>
+            <path class="s3" d="M90,90 C80,70 98,55 88,35 C80,18 96,10 92,0"/>
+          </svg>
+        </div>
+
+        <svg class="glass-svg" id="glassSvg" width="150" height="170" viewBox="0 0 150 170">
+          <defs>
+            <clipPath id="liquidClip">
+              <rect id="liquidRect" x="18" y="150" width="114" height="0" rx="2"/>
+            </clipPath>
+            <linearGradient id="liquidGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop id="gradTop" offset="0%" stop-color="#e6a940"/>
+              <stop id="gradBottom" offset="100%" stop-color="#8a5314"/>
+            </linearGradient>
+          </defs>
+          <!-- glass body -->
+          <path d="M14,20 L136,20 L124,158 Q124,166 116,166 L34,166 Q26,166 26,158 Z"
+                fill="rgba(255,255,255,0.035)" stroke="var(--glass-rim)" stroke-width="3"/>
+          <!-- liquid -->
+          <rect x="14" y="20" width="122" height="146" clip-path="url(#liquidClip)" fill="url(#liquidGrad)"/>
+          <!-- rim highlight -->
+          <ellipse cx="75" cy="20" rx="61" ry="6" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
+          <!-- glass shine -->
+          <path d="M32,28 L26,150" stroke="rgba(255,255,255,0.10)" stroke-width="6" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <div class="temp-readout" id="tempReadout">— °C</div>
+      <div class="temp-sub" id="tempSub">pour to begin the experiment</div>
+
+      <button class="pour-btn" id="pourBtn">🫖 Pour Tea &amp; Start Timer</button>
+      <button class="drink-btn" id="drinkBtn">☕ DON'T LET THE TEA DIE</button>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="right-col">
+
+      <div class="panel">
+        <h2>Brew parameters <span class="n">inputs</span></h2>
+        <div class="field-grid">
+          <div class="field">
+            <label>Initial temperature <span class="val" id="v-initTemp">85°C</span></label>
+            <input type="range" id="initTemp" min="70" max="98" value="85">
+          </div>
+          <div class="field">
+            <label>Room temperature <span class="val" id="v-roomTemp">24°C</span></label>
+            <input type="range" id="roomTemp" min="14" max="34" value="24">
+          </div>
+          <div class="field">
+            <label>Cup type</label>
+            <select id="cupType">
+              <option value="glass">Steel / glass tumbler</option>
+              <option value="ceramic" selected>Ceramic mug</option>
+              <option value="flask">Insulated flask</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Amount of tea</label>
+            <select id="amount">
+              <option value="small">Small (~120 ml)</option>
+              <option value="medium" selected>Medium (~200 ml)</option>
+              <option value="large">Large (~350 ml)</option>
+            </select>
+          </div>
+          <div class="toggle-row">
+            <label for="lidToggle">Cup has a lid</label>
+            <div class="switch">
+              <input type="checkbox" id="lidToggle">
+              <span class="slider-el"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel predict-panel">
+        <h2>AI prediction <span class="n">live model</span></h2>
+        <div class="predict-hero">
+          <div>
+            <div class="label">Time until "too cold to enjoy" (40°C)</div>
+            <div class="value" id="predictValue">— : —</div>
+          </div>
+          <div class="confidence">
+            <div class="cbar"><div id="confBar" style="width:0%"></div></div>
+            <div class="clabel" id="confLabel">confidence —</div>
+          </div>
+        </div>
+        <div class="factors" id="factors"></div>
+        <div class="log" id="log"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>ChayaGPT is powered by Newton's Law of Cooling and mild exaggeration. Not a substitute for actually drinking your tea on time.</footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modalBox">
+    <div class="emoji" id="modalEmoji">⚠️</div>
+    <h3 id="modalTitle">Drink your tea NOW!</h3>
+    <p id="modalText">Your chaya has crossed into the danger zone. Every second now is a personal insult to the person who made it.</p>
+    <div class="modal-actions">
+      <button class="ghost" id="modalIgnore">Ignore it (bold move)</button>
+      <button class="primary" id="modalDrink">☕ Drink it now</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  const initTemp = $('initTemp'), roomTemp = $('roomTemp'), cupType = $('cupType'),
+        amount = $('amount'), lidToggle = $('lidToggle');
+  const vInit = $('v-initTemp'), vRoom = $('v-roomTemp');
+  const pourBtn = $('pourBtn'), drinkBtn = $('drinkBtn');
+  const tempReadout = $('tempReadout'), tempSub = $('tempSub');
+  const statusPill = $('statusPill');
+  const liquidRect = $('liquidRect'), gradTop = $('gradTop'), gradBottom = $('gradBottom');
+  const steamWrap = $('steamWrap'), glassSvg = $('glassSvg');
+  const predictValue = $('predictValue'), confBar = $('confBar'), confLabel = $('confLabel');
+  const factorsEl = $('factors'), logEl = $('log');
+  const overlay = $('overlay'), modalBox = $('modalBox'), modalEmoji = $('modalEmoji'),
+        modalTitle = $('modalTitle'), modalText = $('modalText'),
+        modalIgnore = $('modalIgnore'), modalDrink = $('modalDrink');
+
+  const LIQUID_MAX_H = 146, LIQUID_Y0 = 166;
+  const WARN_TEMP = 45;
+  const CRITICAL_TEMP = 32;
+  const TARGET_TEMP = 40;
+  const SPEED = 7; // simulated seconds per real second
+
+  let running = false;
+  let startTs = 0;
+  let k = 0.006;
+  let T0 = 85, Troom = 24;
+  let warnedShown = false, criticalShown = false, drunk = false;
+  let confidence = 92;
+  let rafId = null;
+
+  initTemp.addEventListener('input', () => vInit.textContent = initTemp.value + '°C');
+  roomTemp.addEventListener('input', () => vRoom.textContent = roomTemp.value + '°C');
+
+  function log(msg, cls){
+    const d = document.createElement('div');
+    if(cls) d.className = cls;
+    d.textContent = msg;
+    logEl.prepend(d);
+    while(logEl.children.length > 8) logEl.removeChild(logEl.lastChild);
+  }
+
+  function cupFactor(){
+    return {glass:1.5, ceramic:1.0, flask:0.4}[cupType.value];
+  }
+  function amountFactor(){
+    return {small:1.35, medium:1.0, large:0.72}[amount.value];
+  }
+
+  function computeK(){
+    const lidF = lidToggle.checked ? 0.55 : 1.0;
+    return 0.0058 * cupFactor() * amountFactor() * lidF;
+  }
+
+  function tempAt(tSim){
+    return Troom + (T0 - Troom) * Math.exp(-k * tSim);
+  }
+
+  function timeToTarget(tSimNow){
+    if (TARGET_TEMP <= Troom) return null; // will never reach it
+    const ratio = (TARGET_TEMP - Troom) / (T0 - Troom);
+    if (ratio <= 0 || ratio >= 1) return null;
+    const tTargetSim = -Math.log(ratio) / k;
+    return tTargetSim - tSimNow;
+  }
+
+  function fmt(sec){
+    if (sec === null || sec < 0 || !isFinite(sec)) return '0:00';
+    const m = Math.floor(sec/60), s = Math.floor(sec%60);
+    return m + ':' + String(s).padStart(2,'0');
+  }
+
+  function setLiquidHeight(frac){
+    const h = Math.max(0, Math.min(1, frac)) * LIQUID_MAX_H;
+    liquidRect.setAttribute('y', LIQUID_Y0 - h);
+    liquidRect.setAttribute('height', h);
+  }
+
+  function colorForTemp(t){
+    // interpolate hot amber -> cool blue-brown
+    const hotTop = [230,169,64], hotBot=[138,83,20];
+    const coldTop = [123,150,168], coldBot=[74,92,107];
+    const frac = Math.max(0, Math.min(1, (t - Troom) / (95 - Troom)));
+    const lerp = (a,b,f) => Math.round(a + (b-a)*f);
+    const top = [0,1,2].map(i => lerp(coldTop[i], hotTop[i], frac));
+    const bot = [0,1,2].map(i => lerp(coldBot[i], hotBot[i], frac));
+    return [`rgb(${top.join(',')})`, `rgb(${bot.join(',')})`];
+  }
+
+  function updateFactors(){
+    factorsEl.innerHTML = '';
+    const items = [
+      `cup: ${cupType.options[cupType.selectedIndex].text}`,
+      `amount: ${amount.options[amount.selectedIndex].text}`,
+      lidToggle.checked ? 'lid: on' : 'lid: off',
+      `k = ${k.toFixed(4)}/s`,
+    ];
+    items.forEach(t=>{
+      const c = document.createElement('div');
+      c.className='factor-chip';
+      c.textContent = t;
+      factorsEl.appendChild(c);
+    });
+  }
+
+  function setStatus(text, cls){
+    statusPill.textContent = text;
+    statusPill.className = 'status-pill ' + cls;
+  }
+
+  function openModal(kind){
+    if (kind === 'warn'){
+      modalBox.className = 'modal warn';
+      modalEmoji.textContent = '⚠️';
+      modalTitle.textContent = 'Drink your tea NOW!';
+      modalText.textContent = "You're at " + Math.round(tempAt(simNow())) + "°C. The model gives you a small window before this stops being enjoyable and starts being a lukewarm regret.";
+    } else {
+      modalBox.className = 'modal danger';
+      modalEmoji.textContent = '💀';
+      modalTitle.textContent = 'Why is this so cold?';
+      modalText.textContent = "Your tea has entered the \"why is this so cold\" zone. Temperature: " + Math.round(tempAt(simNow())) + "°C. Status: emotionally finished.";
+    }
+    overlay.classList.add('show');
+  }
+  function closeModal(){ overlay.classList.remove('show'); }
+
+  function simNow(){
+    return (performance.now() - startTs) / 1000 * SPEED;
+  }
+
+  function reset(){
+    running = false;
+    warnedShown = false; criticalShown = false; drunk = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    glassSvg.classList.remove('tilt');
+    steamWrap.style.opacity = 0;
+    setLiquidHeight(0);
+    tempReadout.textContent = '— °C';
+    tempSub.textContent = 'pour to begin the experiment';
+    predictValue.textContent = '— : —';
+    confBar.style.width = '0%';
+    confLabel.textContent = 'confidence —';
+    setStatus('Awaiting chaya', 'idle');
+    drinkBtn.classList.remove('show');
+    pourBtn.disabled = false;
+    pourBtn.textContent = '🫖 Pour Tea & Start Timer';
+    logEl.innerHTML = '';
+    closeModal();
+  }
+
+  function finish(reasonCold){
+    running = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    if (reasonCold){
+      tempReadout.style.color = 'var(--cold)';
+      tempSub.textContent = 'status: emotionally finished 🥲';
+      setStatus('Tea has expired', 'danger');
+    }
+    pourBtn.disabled = false;
+    pourBtn.textContent = '🫖 Pour Another Cup';
+    drinkBtn.classList.remove('show');
+  }
+
+  function drink(){
+    if (drunk) return;
+    drunk = true;
+    running = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    closeModal();
+    glassSvg.classList.add('tilt');
+    steamWrap.style.opacity = 0;
+    log('you drank the tea. respect. 🫡', 'hot');
+    setStatus('Tea successfully rescued', 'good');
+    let h = parseFloat(liquidRect.getAttribute('height')) || 0;
+    const drain = setInterval(()=>{
+      h -= 8;
+      setLiquidHeight(h/LIQUID_MAX_H);
+      if (h<=0){
+        clearInterval(drain);
+        tempSub.textContent = 'no more tea. no more problems.';
+        drinkBtn.classList.remove('show');
+        pourBtn.disabled = false;
+        pourBtn.textContent = '🫖 Pour Another Cup';
+      }
+    }, 45);
+  }
+
+  function tick(){
+    if (!running) return;
+    const tSim = simNow();
+    const t = tempAt(tSim);
+    const clamped = Math.max(Troom, t);
+
+    tempReadout.textContent = Math.round(clamped) + '°C';
+    tempReadout.style.color = clamped <= CRITICAL_TEMP ? 'var(--cold)' : (clamped <= WARN_TEMP ? 'var(--warn)' : 'var(--cream)');
+    tempSub.textContent = 'elapsed: ' + fmt(tSim);
+
+    const frac = (clamped - Troom) / (T0 - Troom + 0.001);
+    setLiquidHeight(0.86 * Math.max(0.06, frac) + 0.06);
+    const [gt, gb] = colorForTemp(clamped);
+    gradTop.setAttribute('stop-color', gt);
+    gradBottom.setAttribute('stop-color', gb);
+
+    const steamOpacity = Math.max(0, Math.min(1, (clamped - 50) / 30));
+    steamWrap.style.opacity = steamOpacity;
+
+    const remaining = timeToTarget(tSim);
+    if (remaining !== null && remaining > -9999){
+      predictValue.textContent = remaining > 0 ? fmt(remaining) + ' remaining' : 'target reached';
+    } else {
+      predictValue.textContent = 'stable — no cutoff';
+    }
+    confidence = Math.max(70, Math.min(98, confidence - 0.02));
+    confBar.style.width = confidence + '%';
+    confLabel.textContent = 'confidence ' + confidence.toFixed(1) + '%';
+
+    if (clamped <= WARN_TEMP && !warnedShown){
+      warnedShown = true;
+      setStatus('Cooling — drink soon', 'warn');
+      drinkBtn.classList.add('show');
+      log(Math.round(clamped) + '°C — prediction: ' + fmt(remaining) + ' left. drink now!', 'hot');
+      openModal('warn');
+    } else if (clamped <= CRITICAL_TEMP && !criticalShown){
+      criticalShown = true;
+      setStatus('Tea has expired', 'danger');
+      log(Math.round(clamped) + '°C — status: emotionally finished 💀', 'cold');
+      openModal('critical');
+    } else if (!warnedShown && Math.round(clamped) % 10 === 0){
+      // occasional ambient log line while hot, handled by interval below instead
+    }
+
+    if (clamped <= Troom + 0.5){
+      finish(true);
+      return;
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  let lastLoggedBucket = null;
+  function ambientLog(){
+    if (!running) return;
+    const t = tempAt(simNow());
+    const bucket = Math.floor(t/10)*10;
+    if (bucket !== lastLoggedBucket && t > WARN_TEMP){
+      lastLoggedBucket = bucket;
+      log('~' + Math.round(t) + '°C — cooling normally');
+    }
+    if (running) setTimeout(ambientLog, 550);
+  }
+
+  pourBtn.addEventListener('click', () => {
+    reset();
+    T0 = parseFloat(initTemp.value);
+    Troom = parseFloat(roomTemp.value);
+    k = computeK();
+    confidence = 90 + Math.random()*8;
+    updateFactors();
+    startTs = performance.now();
+    running = true;
+    pourBtn.disabled = true;
+    pourBtn.textContent = 'Cooling in progress…';
+    setStatus('Fresh & hot', 'good');
+    setLiquidHeight(0.92);
+    log('poured at ' + T0 + '°C into ' + cupType.options[cupType.selectedIndex].text.toLowerCase());
+    lastLoggedBucket = null;
+    ambientLog();
+    rafId = requestAnimationFrame(tick);
+  });
+
+  drinkBtn.addEventListener('click', drink);
+  modalDrink.addEventListener('click', drink);
+  modalIgnore.addEventListener('click', closeModal);
+
+  updateFactors();
+})();
+</script>
+</body>
+</html>
