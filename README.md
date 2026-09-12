@@ -36,8 +36,7 @@ Not applicable — ChayaGPT is a purely software/web-based simulation project. N
 ### Implementation
 For Software:
 # Installation
-[git clone <your-repo-urhttps://github.com/GraceRose12/useless_project_temp/tree/main>
-cd chayagpt]
+https://chayagptin.netlify.app
 
 # Run
 [open index.html]
